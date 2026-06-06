@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Happy Birthday Puzzle</title>
+<style>
+  body {
+    background-image: url("cover.jpeg");
+    background-size: cover;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+    position: center;
+    margin: 0; padding: 0; overflow-x: hidden;
+  }
+  .centered-box {
+    background: rgba(40, 40, 60, 0.8);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 350px;
+    margin: 50px auto;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(238, 0, 255, 0.6);
+    position: relative; 
+  }
+  button {
+    background-color: #e7748a;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-style: italic;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 15px;
+  }
+  button:hover { background-color: #ff8ca1; }
+  img.avatar { width: 80px; margin-bottom: 12px; }
+  .hidden { display: none; }
+
+  /* --- PUZZLE MECHANIC --- */
+  #puzzle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .drop-zone-container {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(3, 80px);
+    gap: 2px;
+    background: #444;
+    border: 2px solid #ffb6c1;
+  }
+  .drop-zone {
+    width: 80px;
+    height: 80px;
+    background: rgba(255,255,255,0.1);
+    border: 1px dashed #666;
+  }
+  .pieces-pool {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    min-height: 100px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    width: 100%;
+  }
+  .piece {
+    width: 80px;
+    height: 80px;
+    cursor: grab;
+    background-image: url('aib2.JPG'); 
+    background-size: 240px 240px;
+    border-radius: 4px;
+    touch-action: none; 
+    position: relative; 
+  }
+  .piece:active { cursor: grabbing; }
+  .piece.dragging {
+    z-index: 1000;
+    pointer-events: none; 
+  }
+  #reset-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e7748a;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-style: italic;
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #reset-btn:hover { background-color: #ff8ca1; }
+</style>
+</head>
+
+<body>
+<audio id="bgMusic" loop>
+  <source src="ultah.mp3" type="audio/mpeg">
+  Browser kamu tidak mendukung audio.
+</audio>
+
+<div id="page1" class="centered-box">
+  <img src="bday.gif" alt="Avatar" class="avatar" />
+  <div><b>ALOOO HANUMMMM 🤩🤩</b></div>
+  <button onclick="startSurat()">Mulai</button>
+</div>
+
+<div id="page2" class="centered-box hidden">
+  <img src="love-letter.gif" alt="Surat" style="width:100px; margin-bottom: 10px" />
+  <div id="suratText" style="font-weight:bold; min-height: 50px;"></div>
+</div>
+
+<div id="page3" class="centered-box hidden">
+  <img src="pengu-pudgy.gif" alt="Avatar" class="avatar" />
+  <div><b>Tahun Lahir Kamu? 🤔</b></div>
+  <input type="range" min="1980" max="2023" value="2000" id="yearRange" oninput="updateYearLabel()" style="width:100%; margin-top:10px;">
+  <div id="yearLabel" style="margin:10px 0; font-weight:bold; color:#ffb6c1;">2000</div>
+  <button onclick="goToPuzzle()">Lanjutkan</button>
+</div>
+
+<div id="page4" class="centered-box hidden">
+  <button id="reset-btn" onclick="resetPuzzle()">Reset</button>
+  <div style="margin-bottom:15px;"><b>Susun Potongan Fotonya! 🧩</b></div>
+  
+  <div id="puzzle-container">
+    <div class="drop-zone-container" id="drop-board"></div>
+    <div class="pieces-pool" id="pieces-pool"></div>
+  </div>
+</div>
+
+<div id="page5" class="centered-box hidden" style="font-weight:bold; font-style:italic;">
+  <div id="typingText"></div>
+  <button id="btnToGallery" class="hidden" onclick="goToGallery()">Lihat Galeri</button>
+</div>
+
+<script>
+const suratTextContent = "Halo Frida Inaya Hanum! Selamat ulang tahun ya, ini web buat hanummm! 🎉";
+let tahunLahir = 2000; 
+
+function startSurat() {
+  const music = document.getElementById('bgMusic');
+  music.play().catch(e => console.log('Autoplay diblokir.')); 
+  
+  document.getElementById('page1').classList.add('hidden');
+  document.getElementById('page2').classList.remove('hidden');
+  typeText('suratText', suratTextContent, 50, () => {
+    let btn = document.createElement('button');
+    btn.innerText = "Lanjut";
+    btn.onclick = () => {
+      document.getElementById('page2').classList.add('hidden');
+      document.getElementById('page3').classList.remove('hidden');
+    };
+    document.getElementById('page2').appendChild(btn);
+  });
+}
+
+function typeText(elementId, text, speed, callback) {
+  let i = 0;
+  let elem = document.getElementById(elementId);
+  function typing() {
+    if (i < text.length) {
+      elem.innerHTML += text.charAt(i); i++;
+      setTimeout(typing, speed);
+    } else if(callback) callback();
+  }
+  typing();
+}
+
+function updateYearLabel() {
+  tahunLahir = parseInt(document.getElementById('yearRange').value);
+  document.getElementById('yearLabel').innerText = tahunLahir;
+}
+
+function goToPuzzle() {
+  document.getElementById('page3').classList.add('hidden');
+  document.getElementById('page4').classList.remove('hidden');
+  initPuzzle();
+}
+
+// --- LOGIC DRAG & DROP PUZZLE ---
+let pieces = []; 
+let draggedPiece = null;
+let offsetX = 0, offsetY = 0;
+
+function initPuzzle() {
+  const board = document.getElementById('drop-board');
+  const pool = document.getElementById('pieces-pool');
+  const size = 3; 
+  const pieceSize = 80;
+  pieces = []; 
+
+  for (let i = 0; i < size * size; i++) {
+    const zone = document.createElement('div');
+    zone.classList.add('drop-zone');
+    zone.dataset.index = i;
+    zone.ondragover = (e) => e.preventDefault();
+    zone.ondrop = handleDrop;
+    board.appendChild(zone);
+
+    const piece = document.createElement('div');
+    piece.classList.add('piece');
+    piece.draggable = true;
+    piece.id = 'piece-' + i;
+    piece.dataset.correctIndex = i;
+
+    const x = (i % size) * pieceSize;
+    const y = Math.floor(i / size) * pieceSize;
+    piece.style.backgroundPosition = `-${x}px -${y}px`;
+    
+    piece.ondragstart = (e) => {
+      draggedPiece = piece;
+      e.dataTransfer.setData('text', e.target.id);
+    };
+
+    piece.addEventListener('touchstart', handleTouchStart, { passive: false });
+    piece.addEventListener('touchmove', handleTouchMove, { passive: false });
+    piece.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    pieces.push(piece);
+  }
+
+  pieces.sort(() => Math.random() - 0.5);
+  pieces.forEach(p => pool.appendChild(p));
+}
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  draggedPiece = e.target;
+  const touch = e.touches[0];
+  const rect = draggedPiece.getBoundingClientRect();
+  offsetX = touch.clientX - rect.left;
+  offsetY = touch.clientY - rect.top;
+  draggedPiece.classList.add('dragging');
+  draggedPiece.style.position = 'absolute';
+  draggedPiece.style.left = `${rect.left}px`;
+  draggedPiece.style.top = `${rect.top}px`;
+}
+
+function handleTouchMove(e) {
+  if (!draggedPiece) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  draggedPiece.style.left = `${touch.clientX - offsetX}px`;
+  draggedPiece.style.top = `${touch.clientY - offsetY}px`;
+}
+
+function handleTouchEnd(e) {
+  if (!draggedPiece) return;
+  e.preventDefault();
+  draggedPiece.classList.remove('dragging');
+  draggedPiece.style.position = '';
+  draggedPiece.style.left = '';
+  draggedPiece.style.top = '';
+
+  const touch = e.changedTouches[0];
+  const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (elementAtPoint && elementAtPoint.classList.contains('drop-zone') && elementAtPoint.children.length === 0) {
+    elementAtPoint.appendChild(draggedPiece);
+    checkWin();
+  } else {
+    document.getElementById('pieces-pool').appendChild(draggedPiece);
+  }
+  draggedPiece = null;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const pieceId = e.dataTransfer.getData('text');
+  const piece = document.getElementById(pieceId);
+  const zone = e.target;
+
+  if (zone.classList.contains('drop-zone') && zone.children.length === 0) {
+    zone.appendChild(piece);
+    checkWin();
+  }
+}
+
+function checkWin() {
+  const zones = document.querySelectorAll('.drop-zone');
+  let correctCount = 0;
+
+  zones.forEach(zone => {
+    const piece = zone.children[0];
+    if (piece && piece.dataset.correctIndex == zone.dataset.index) {
+      correctCount++;
+    }
+  });
+
+  if (correctCount === 9) {
+    setTimeout(() => {
+      alert("Yeee! Foto berhasil disusun! ❤️");
+      document.getElementById('page4').classList.add('hidden');
+      document.getElementById('page5').classList.remove('hidden');
+      startTypingUcapan();
+    }, 500);
+  }
+}
+
+function resetPuzzle() {
+  const pool = document.getElementById('pieces-pool');
+  const zones = document.querySelectorAll('.drop-zone');
+
+  zones.forEach(zone => {
+    while (zone.firstChild) {
+      pool.appendChild(zone.firstChild);
+    }
+  });
+
+  const poolPieces = Array.from(pool.children);
+  poolPieces.sort(() => Math.random() - 0.5);
+  poolPieces.forEach(p => pool.appendChild(p));
+}
+
+function startTypingUcapan() {
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - tahunLahir;
+  const teksUcapanWithAge = `Selamat ulang tahun! Di usia ${age} tahun, semoga HANUMMM selalu dikelilingi kebahagiaan 🎉🥳 Semoga di usia baru ini, Hanum dapat mewujudkan mimpinya dan selalu dikelilingi oleh orang baik Wish you all the best! 🎉🥳`;
+  
+  typeText('typingText', teksUcapanWithAge, 45, () => {
+    document.getElementById('btnToGallery').classList.remove('hidden');
+  });
+}
+
+function goToGallery() {
+  // PENTING: GANTI URL DI BAWAH INI DENGAN LINK VERCEL KEDUA KAMU
+  window.location.href = "https://LINK-VERCEL-KEDUA-KAMU.vercel.app";
+}
+
+updateYearLabel();
+</script>
+</body>
+</html>
